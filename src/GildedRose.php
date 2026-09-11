@@ -6,6 +6,8 @@ namespace GildedRose;
 
 final class GildedRose
 {
+    private const MAX_QUALITY = 50;
+
     /**
      * @param Item[] $items
      */
@@ -17,51 +19,33 @@ final class GildedRose
     public function updateQuality(): void
     {
         foreach ($this->items as $item) {
-            if ($item->name != 'Aged Brie' and $item->name != 'Backstage passes to a TAFKAL80ETC concert') {
-                if ($item->quality > 0) {
-                    if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                        $item->quality = $item->quality - 1;
-                    }
-                }
-            } else {
-                if ($item->quality < 50) {
-                    $item->quality = $item->quality + 1;
-                    if ($item->name == 'Backstage passes to a TAFKAL80ETC concert') {
-                        if ($item->sellIn < 11) {
-                            if ($item->quality < 50) {
-                                $item->quality = $item->quality + 1;
-                            }
-                        }
-                        if ($item->sellIn < 6) {
-                            if ($item->quality < 50) {
-                                $item->quality = $item->quality + 1;
-                            }
-                        }
-                    }
-                }
+            if (str_starts_with($item->name, 'Sulfuras')) {
+                continue;
             }
 
-            if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                $item->sellIn = $item->sellIn - 1;
-            }
+            $daysRemaining = $item->sellIn;
+            $item->sellIn--;
+            $passedSellBy = $item->sellIn < 0;
 
-            if ($item->sellIn < 0) {
-                if ($item->name != 'Aged Brie') {
-                    if ($item->name != 'Backstage passes to a TAFKAL80ETC concert') {
-                        if ($item->quality > 0) {
-                            if ($item->name != 'Sulfuras, Hand of Ragnaros') {
-                                $item->quality = $item->quality - 1;
-                            }
-                        }
-                    } else {
-                        $item->quality = $item->quality - $item->quality;
-                    }
+            if ($item->name === 'Aged Brie') {
+                $item->quality += $passedSellBy ? 2 : 1;
+            } elseif (str_starts_with($item->name, 'Backstage passes')) {
+                if ($passedSellBy) {
+                    $item->quality = 0;
+                } elseif ($daysRemaining <= 5) {
+                    $item->quality += 3;
+                } elseif ($daysRemaining <= 10) {
+                    $item->quality += 2;
                 } else {
-                    if ($item->quality < 50) {
-                        $item->quality = $item->quality + 1;
-                    }
+                    ++$item->quality;
                 }
+            } elseif (str_starts_with($item->name, 'Conjured')) {
+                $item->quality -= $passedSellBy ? 4 : 2;
+            } else {
+                $item->quality -= $passedSellBy ? 2 : 1;
             }
+
+            $item->quality = max(0, min(self::MAX_QUALITY, $item->quality));
         }
     }
 }
